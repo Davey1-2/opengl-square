@@ -1,74 +1,73 @@
+
+
 import org.lwjgl.BufferUtils;
-import org.lwjgl.opengl.GL;
-import org.lwjgl.opengl.GL15;
+import org.lwjgl.glfw.GLFW;
 import org.lwjgl.opengl.GL33;
+import org.lwjgl.system.CallbackI;
 import org.lwjgl.system.MemoryUtil;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
 import java.nio.FloatBuffer;
+import java.nio.IntBuffer;
+import java.util.ArrayList;
 
 public class Game {
 
-    private static final float vertices[] = {
 
-            0.5f,  0.5f, 0.0f,  // top right
-            0.5f, -0.5f, 0.0f,  // bottom right
-            -0.5f, -0.5f, 0.0f,  // bottom left
-            -0.5f,  0.5f, 0.0f   // top left
-    };
-    private static final float indices[] = {  // note that we start from 0!
-            0, 1, 3,   // first triangle
-            1, 2, 3    // second triangle
-    };
-
-    private static int triangleVaoId;
-    private static int triangleVboId;
-    private static int EBO;
+    private static ArrayList<Square> squares = new ArrayList<Square>();
 
 
-    public static void init(long window) {
 
-        // Setup shaders
+    public static void init(long window) throws IOException {
+
         Shaders.initShaders();
 
-        // Generate all the ids
-        triangleVaoId = GL33.glGenVertexArrays();
-        triangleVboId = GL33.glGenBuffers();
-        EBO = GL33.glGenBuffers();
+        BufferedReader br = new BufferedReader(new FileReader("maze1 (1).txt"));
+        ArrayList<String> arr = new ArrayList<>();
+        int countVertical = 0;
+        int countHorizontal;
+        String line;
+
+        Shaders.initShaders();
 
 
-        // Tell OpenGL we are currently using this object (vaoId)
-        GL33.glBindVertexArray(triangleVaoId);
-        // Tell OpenGL we are currently writing to this buffer (vboId)
-        GL33.glBindBuffer(GL33.GL_ARRAY_BUFFER, triangleVboId);
 
-        FloatBuffer fb = BufferUtils.createFloatBuffer(vertices.length)
-                .put(vertices)
-                .flip();
+        while ((line = br.readLine()) != null) {
+            arr.add(line);
 
-        FloatBuffer ind = BufferUtils.createFloatBuffer(indices.length)
-                .put(indices)
-                .flip();
+            countVertical++;
+        }
+        br.close();
+        countHorizontal = arr.get(1).length();
 
-        // Send the buffer (positions) to the GPU
-        GL33.glBufferData(GL33.GL_ARRAY_BUFFER, fb, GL33.GL_STATIC_DRAW);
+        float pieceX = 2.0f / countHorizontal;
+        float pieceY = 2.0f / countVertical;
 
-        GL33.glBindBuffer(GL33.GL_ELEMENT_ARRAY_BUFFER, EBO);
-        GL33.glBufferData(GL33.GL_ELEMENT_ARRAY_BUFFER, ind,GL33.GL_STATIC_DRAW );
 
-        GL33.glVertexAttribPointer(0, 3, GL33.GL_FLOAT, false, 0, 0);
-        GL33.glEnableVertexAttribArray(0);
+        for (int y = 0; y < countVertical; y++) {
+            line = arr.get(y);
+            for (int x = 0; x < line.length(); x++) {
+                if (line.charAt(x) == '0'){
+                    squares.add(new Square(x*pieceX-1,(y*pieceY)* -1+1,pieceX,pieceY));
+                }
+            }
 
-        // Clear the buffer from the memory (it's saved now on the GPU, no need for it here)
-        MemoryUtil.memFree(fb);
+        }
     }
 
+
     public static void render(long window) {
-        GL33.glUseProgram(Shaders.shaderProgramId);
-        GL33.glBindVertexArray(triangleVaoId);
-        GL33.glDrawArrays(GL33.GL_TRIANGLES, 6, EBO);
-        GL33.glBindVertexArray(0);
+
+        for (Square square : squares){
+            square.draw();
+        }
+
     }
 
     public static void update(long window) {
     }
+
+
 }
